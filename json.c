@@ -64,12 +64,15 @@ json_word_t* word_next(json_document_t* json_doc)
 		json_doc->lookup.wtype = WORD_STRING;
 		json_doc->cur_pos += 2;
 		json_doc->lookup.string_val = json_doc->cur_pos;
-		while (*(++json_doc->cur_pos) != look_char)
+		while (*(json_doc->cur_pos) != look_char)
 		{
-			continue;
+			++json_doc->cur_pos;
+			if (*(json_doc->cur_pos) == '\\')
+			{
+				++json_doc->cur_pos;
+			}
 		}
 		json_doc->lookup.val_len = json_doc->cur_pos - json_doc->lookup.string_val;
-
 	}
 	else if (isdigit(look_char)) {//TODO
 		json_doc->lookup.wtype = WORD_INT;
@@ -315,6 +318,9 @@ json_value_t* json_parse_pair(json_document_t* json_doc, pool_t* pool)
 	assert(plook->wtype == ':');
 	json_value_t* json_val = json_parse_value(json_doc, pool);
 	json_set_pair(json_pair, json_key, json_val);
+	plook = word_lookup(json_doc);
+	assert(plook->wtype == ','
+		|| plook->wtype == '}');
 	return json_pair;
 }
 
@@ -329,6 +335,9 @@ json_value_t* json_parse_object(json_document_t* json_doc, pool_t* pool)
 	{
 		json_value_t* json_pair = json_parse_pair(json_doc, pool);
 		json_list_push(json_list, json_pair);
+		plook = word_lookup(json_doc);
+		assert(plook->wtype == '}'
+			|| plook->wtype == ',');
 		if (plook->wtype == ',')
 		{
 			word_next(json_doc);
@@ -336,7 +345,7 @@ json_value_t* json_parse_object(json_document_t* json_doc, pool_t* pool)
 
 		plook = word_lookup(json_doc);
 	}
-	assert(plook->wtype == (int)'}');
+	assert(plook->wtype == '}');
 	word_next(json_doc);
 	return json_list;
 }
