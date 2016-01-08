@@ -77,9 +77,9 @@ json_word_t* word_next(json_document_t* json_doc)
 		
 		json_doc->lookup.val_len = 0;
 		while (isdigit(json_doc->cur_pos[1])
-			|| json_doc->cur_pos[1] =='\.')
+			|| json_doc->cur_pos[1] =='.')
 		{
-			if(json_doc->cur_pos[1] == '\.')
+			if(json_doc->cur_pos[1] == '.')
 			{
 				json_doc->lookup.wtype = WORD_DOUBLE;
 			}
@@ -96,7 +96,7 @@ json_word_t* word_next(json_document_t* json_doc)
 		
 	}
 	else if (isalpha(look_char) || look_char == '_') {//TODO
-		json_doc->lookup.wtype = WORD_KEY;
+		json_doc->lookup.wtype = WORD_ID;
 		json_doc->lookup.string_val = json_doc->cur_pos + 1;
 		json_doc->lookup.val_len = 0;
 		while (isalnum(json_doc->cur_pos[1])
@@ -125,7 +125,7 @@ void word_print(json_word_t* pword)
 {
 	switch (pword->wtype)
 	{
-	case WORD_KEY:
+	case WORD_ID:
 		printf("key->%s,len=%d\n", pword->string_val, pword->val_len);
 		break;
 	case WORD_STRING:
@@ -247,17 +247,51 @@ json_value_t* json_set_double_word(json_value_t* json_val, json_word_t* json_wor
 	return json_val;
 }
 
+json_value_t* json_set_id_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool)
+{
+	assert(json_val->json_type == JSON_ID);
+	assert(json_word->wtype == WORD_ID
+		|| json_word->wtype == WORD_STRING);
+	if(json_word->wtype == WORD_STRING)
+	{
+		return json_set_string_word(json_val,json_word,pool);
+	}
+
+	if (strncmp("true", json_word->string_val, json_word->val_len) == 0)
+	{
+		json_val->json_type = JSON_BOOL;
+		json_val->bool_val = K_TRUE;
+	}
+	else if (strncmp("false", json_word->string_val, json_word->val_len) == 0)
+	{
+		json_val->json_type = JSON_BOOL;
+		json_val->bool_val = K_FALSE;
+	}
+	else if (strncmp("null", json_word->string_val, json_word->val_len) == 0)
+	{
+		json_val->json_type = JSON_NULL;
+		json_val->int_val = 0;
+	}
+	else
+	{
+		json_val->string_val = (char*)pool_malloc(pool, json_word->val_len + 1);
+		memcpy(json_val->string_val, json_word->string_val, json_word->val_len);
+		(json_val->string_val)[json_word->val_len] = '\0';
+	}
+	return json_val;
+}
+
 json_value_t* json_set_string_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool)
 {
 	assert(json_val->json_type == JSON_STRING
-		|| json_val->json_type == JSON_KEY);
-	assert(json_word->wtype == WORD_STRING
-		|| json_word->wtype == WORD_KEY);
+		|| json_val->json_type == JSON_ID);
+	assert(json_word->wtype == WORD_STRING);
 	json_val->string_val = (char*)pool_malloc(pool, json_word->val_len + 1);
 	memcpy(json_val->string_val, json_word->string_val, json_word->val_len);
 	(json_val->string_val)[json_word->val_len] = '\0';
 	return json_val;
 }
+
 json_value_t* json_set_pair(json_value_t* json_pair, json_value_t* json_key, json_value_t* json_val)
 {
 	assert(json_pair->json_type == JSON_PAIR);
@@ -276,7 +310,7 @@ json_value_t* json_list_push(json_value_t* json_list, json_value_t* json_val)
 json_value_t* json_parse_pair(json_document_t* json_doc, pool_t* pool)
 {
 	json_value_t* json_pair = json_new_value(JSON_PAIR, pool);
-	json_value_t* json_key = json_parse_key(json_doc, pool);
+	json_value_t* json_key = json_parse_id(json_doc, pool);
 	json_word_t* plook = word_next(json_doc);
 	assert(plook->wtype == ':');
 	json_value_t* json_val = json_parse_value(json_doc, pool);
@@ -290,7 +324,7 @@ json_value_t* json_parse_object(json_document_t* json_doc, pool_t* pool)
 	json_word_t* plook = word_next(json_doc);
 	assert(plook->wtype == '{');
 	plook = word_lookup(json_doc);
-	while (plook->wtype == WORD_KEY
+	while (plook->wtype == WORD_ID
 		|| plook->wtype == WORD_STRING)
 	{
 		json_value_t* json_pair = json_parse_pair(json_doc, pool);
@@ -329,12 +363,19 @@ json_value_t* json_parse_array(json_document_t* json_doc, pool_t* pool)
 	return json_list;
 }
 
-json_value_t* json_parse_key(json_document_t* json_doc, pool_t* pool)
+json_value_t* json_parse_id(json_document_t* json_doc, pool_t* pool)
 {
-	json_value_t* json_val = json_new_value(JSON_KEY, pool);
+	json_value_t* json_val = json_new_value(JSON_ID, pool);
 	json_word_t* word = word_next(json_doc);
-	assert(json_val->json_type == JSON_STRING || json_val->json_type == JSON_KEY);
-	json_set_string_word(json_val, word, pool);
+	assert(json_val->json_type == JSON_STRING || json_val->json_type == JSON_ID);
+	if(json_val->json_type == JSON_ID)
+	{
+		json_set_id_word(json_val, word, pool);
+	}
+	else
+	{
+		json_set_string_word(json_val, word, pool);
+	}
 	return json_val;
 }
 json_value_t* json_parse_string(json_document_t* json_doc, pool_t* pool)
@@ -379,6 +420,8 @@ json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool)
 		return json_parse_int(json_doc, pool);
 	case WORD_DOUBLE:
 		return json_parse_double(json_doc, pool);
+	case WORD_ID:
+		return json_parse_id(json_doc, pool);
 	default:
 		return &(json_doc->json_error);
 	}
@@ -412,7 +455,7 @@ bool_t        json_is_object(json_value_t* json_val)
 bool_t        json_is_string(json_value_t* json_val)
 {
 	return json_val->json_type == JSON_STRING
-		|| json_val->json_type == JSON_KEY;
+		|| json_val->json_type == JSON_ID;
 }
 
 bool_t        json_is_int(json_value_t* json_val)
@@ -555,8 +598,12 @@ bool_t        json_print_node(json_value_t* json_val, print_json_callback print_
 		return json_print_double(json_val, print_back);
 	case JSON_STRING:
 		return json_print_string(json_val, print_back);
-	case JSON_KEY:
+	case JSON_ID:
 		return json_print_key(json_val, print_back);
+	case JSON_BOOL:
+		return json_print_bool(json_val, print_back);
+	case JSON_NULL:
+		return json_print_null(json_val, print_back);
 	case JSON_ARRAY:
 		return json_print_array(json_val, print_back);
 	case JSON_OBJECT:
@@ -632,9 +679,22 @@ bool_t        json_print_object(json_value_t* json_val, print_json_callback prin
 
 bool_t        json_print_key(json_value_t* json_val, print_json_callback print_back)
 {
-	assert(json_val->json_type == JSON_STRING
-		|| json_val->json_type == JSON_KEY);
+	assert(json_val->json_type == JSON_ID);
 	print_back(json_val->string_val);
+	return K_TRUE;
+}
+
+bool_t        json_print_bool(json_value_t* json_val, print_json_callback print_back)
+{
+	assert(json_val->json_type == JSON_BOOL);
+	print_back(json_val->bool_val ? "true" : "false");
+	return K_TRUE;
+}
+
+bool_t        json_print_null(json_value_t* json_val, print_json_callback print_back)
+{
+	assert(json_val->json_type == JSON_NULL);
+	print_back("null");
 	return K_TRUE;
 }
 

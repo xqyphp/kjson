@@ -36,17 +36,19 @@ typedef enum json_type_e
 	JSON_ARRAY,
 	JSON_OBJECT,
 	JSON_PAIR,
-	JSON_KEY,
+	JSON_ID,
 	JSON_STRING,
 	JSON_INT,
 	JSON_DOUBLE,
+	JSON_BOOL,
+	JSON_NULL,
 	JSON_ERROR
 }json_type_t;
 
 
 #define WORD_STRING 257
 #define WORD_INT    258
-#define WORD_KEY    259
+#define WORD_ID    259
 #define WORD_DOUBLE 260
 
 typedef struct json_word_s {
@@ -78,6 +80,7 @@ typedef struct json_value_s
 	json_type_t json_type;
 	union
 	{
+		int               bool_val;
 		int               int_val;
 		double            double_val;
 		char*             string_val;
@@ -132,6 +135,8 @@ bool_t        json_print_node(json_value_t* json_val, print_json_callback print_
 bool_t        json_print_int(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_double(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_key(json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_bool(json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_null(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_string(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_array(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_object(json_value_t* json_val, print_json_callback print_back);
@@ -142,6 +147,7 @@ json_word_t*  word_lookup(json_document_t* json_doc);
 
 json_value_t* json_set_int_word(json_value_t* json_val, json_word_t* json_word);
 json_value_t* json_set_double_word(json_value_t* json_val, json_word_t* json_word);
+json_value_t* json_set_id_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool);
 json_value_t* json_set_string_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool);
 json_value_t* json_set_pair(json_value_t* json_pair, json_value_t* json_key, json_value_t* json_val);
 json_value_t* json_list_push(json_value_t* json_list, json_value_t* json_val);
@@ -150,7 +156,7 @@ json_value_t* json_new_value(json_type_t json_type, pool_t* pool);
 json_value_t* json_parse_pair(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_object(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_array(json_document_t* json_doc, pool_t* pool);
-json_value_t* json_parse_key(json_document_t* json_doc, pool_t* pool);
+json_value_t* json_parse_id(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_string(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_int(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_double(json_document_t* json_doc, pool_t* pool);
