@@ -39,6 +39,7 @@ typedef enum json_type_e
 	JSON_KEY,
 	JSON_STRING,
 	JSON_INT,
+	JSON_DOUBLE,
 	JSON_ERROR
 }json_type_t;
 
@@ -46,6 +47,7 @@ typedef enum json_type_e
 #define WORD_STRING 257
 #define WORD_INT    258
 #define WORD_KEY    259
+#define WORD_DOUBLE 260
 
 typedef struct json_word_s {
 	int wtype;
@@ -54,6 +56,7 @@ typedef struct json_word_s {
 	{
 		const char* string_val;//may not end with '\0',length is val_len;
 		int         int_val;
+		double      double_val;
 	};
 
 }json_word_t;
@@ -76,6 +79,7 @@ typedef struct json_value_s
 	union
 	{
 		int               int_val;
+		double            double_val;
 		char*             string_val;
 		json_value_pair_t pair_val;
 		json_value_list_t list_val;
@@ -126,6 +130,7 @@ json_value_t* json_child_next(json_value_t* json_val, json_value_t* json_child);
 
 bool_t        json_print_node(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_int(json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_double(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_key(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_string(json_value_t* json_val, print_json_callback print_back);
 bool_t        json_print_array(json_value_t* json_val, print_json_callback print_back);
@@ -136,6 +141,7 @@ json_word_t*  word_next(json_document_t* json_doc);
 json_word_t*  word_lookup(json_document_t* json_doc);
 
 json_value_t* json_set_int_word(json_value_t* json_val, json_word_t* json_word);
+json_value_t* json_set_double_word(json_value_t* json_val, json_word_t* json_word);
 json_value_t* json_set_string_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool);
 json_value_t* json_set_pair(json_value_t* json_pair, json_value_t* json_key, json_value_t* json_val);
 json_value_t* json_list_push(json_value_t* json_list, json_value_t* json_val);
@@ -147,6 +153,7 @@ json_value_t* json_parse_array(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_key(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_string(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_int(json_document_t* json_doc, pool_t* pool);
+json_value_t* json_parse_double(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool);
 
 #endif // JSON_H_INCLUDED

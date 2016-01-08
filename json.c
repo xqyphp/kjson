@@ -73,13 +73,27 @@ json_word_t* word_next(json_document_t* json_doc)
 	}
 	else if (isdigit(look_char)) {//TODO
 		json_doc->lookup.wtype = WORD_INT;
-		json_doc->lookup.int_val = atoi(json_doc->cur_pos + 1);
+		const char* pPos = json_doc->cur_pos + 1;
+		
 		json_doc->lookup.val_len = 0;
-		while (isdigit(json_doc->cur_pos[1]))
+		while (isdigit(json_doc->cur_pos[1])
+			|| json_doc->cur_pos[1] =='\.')
 		{
+			if(json_doc->cur_pos[1] == '\.')
+			{
+				json_doc->lookup.wtype = WORD_DOUBLE;
+			}
 			++json_doc->cur_pos;
 			++json_doc->lookup.val_len;
 		}
+		if(json_doc->lookup.wtype == WORD_INT)
+		{
+			json_doc->lookup.int_val = atoi(pPos);
+		}else
+		{
+			json_doc->lookup.double_val = atof(pPos);
+		}
+		
 	}
 	else if (isalpha(look_char)) {//TODO
 		json_doc->lookup.wtype = WORD_KEY;
@@ -224,6 +238,14 @@ json_value_t* json_set_int_word(json_value_t* json_val, json_word_t* json_word)
 	return json_val;
 }
 
+json_value_t* json_set_double_word(json_value_t* json_val, json_word_t* json_word)
+{
+	assert(json_val->json_type == JSON_DOUBLE);
+	assert(json_word->wtype == WORD_DOUBLE);
+	json_val->double_val = json_word->double_val;
+	return json_val;
+}
+
 json_value_t* json_set_string_word(json_value_t* json_val, json_word_t* json_word, pool_t* pool)
 {
 	assert(json_val->json_type == JSON_STRING
@@ -332,6 +354,15 @@ json_value_t* json_parse_int(json_document_t* json_doc, pool_t* pool)
 	return json_val;
 }
 
+json_value_t* json_parse_double(json_document_t* json_doc, pool_t* pool)
+{
+	json_value_t* json_val = json_new_value(JSON_DOUBLE, pool);
+	json_word_t* word = word_next(json_doc);
+	assert(word->wtype == WORD_DOUBLE);
+	json_set_double_word(json_val, word);
+	return json_val;
+}
+
 json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool)
 {
 	json_word_t* plook = word_lookup(json_doc);
@@ -345,6 +376,8 @@ json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool)
 		return json_parse_string(json_doc, pool);
 	case WORD_INT:
 		return json_parse_int(json_doc, pool);
+	case WORD_DOUBLE:
+		return json_parse_double(json_doc, pool);
 	default:
 		return &(json_doc->json_error);
 	}
@@ -507,7 +540,7 @@ json_value_t* json_child_next(json_value_t* json_val, json_value_t* json_child)
 }
 
 
-bool_t          json_print_node(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_node(json_value_t* json_val, print_json_callback print_back)
 {
 	if (print_back == NULL)
 	{
@@ -517,6 +550,8 @@ bool_t          json_print_node(json_value_t* json_val, print_json_callback prin
 	{
 	case JSON_INT:
 		return json_print_int(json_val, print_back);
+	case JSON_DOUBLE:
+		return json_print_double(json_val, print_back);
 	case JSON_STRING:
 		return json_print_string(json_val, print_back);
 	case JSON_KEY:
@@ -532,7 +567,7 @@ bool_t          json_print_node(json_value_t* json_val, print_json_callback prin
 	}
 }
 
-bool_t          json_print_int(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_int(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_INT);
 	char str[16];
@@ -540,7 +575,17 @@ bool_t          json_print_int(json_value_t* json_val, print_json_callback print
 	print_back(str);
 	return K_TRUE;
 }
-bool_t          json_print_string(json_value_t* json_val, print_json_callback print_back)
+
+bool_t        json_print_double(json_value_t* json_val, print_json_callback print_back)
+{
+	assert(json_val->json_type == JSON_DOUBLE);
+	char str[16];
+	sprintf(str, "%f", json_val->double_val);
+	print_back(str);
+	return K_TRUE;
+}
+
+bool_t        json_print_string(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_STRING);
 	print_back("\"");
@@ -548,7 +593,7 @@ bool_t          json_print_string(json_value_t* json_val, print_json_callback pr
 	print_back("\"");
 	return K_TRUE;
 }
-bool_t          json_print_array(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_array(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_ARRAY);
 	print_back("[");
@@ -566,7 +611,7 @@ bool_t          json_print_array(json_value_t* json_val, print_json_callback pri
 	print_back("]");
 	return K_TRUE;
 }
-bool_t          json_print_object(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_object(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_OBJECT);
 	print_back("{");
@@ -584,7 +629,7 @@ bool_t          json_print_object(json_value_t* json_val, print_json_callback pr
 	return K_TRUE;
 }
 
-bool_t          json_print_key(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_key(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_STRING
 		|| json_val->json_type == JSON_KEY);
@@ -592,7 +637,7 @@ bool_t          json_print_key(json_value_t* json_val, print_json_callback print
 	return K_TRUE;
 }
 
-bool_t          json_print_pair(json_value_t* json_val, print_json_callback print_back)
+bool_t        json_print_pair(json_value_t* json_val, print_json_callback print_back)
 {
 	assert(json_val->json_type == JSON_PAIR);
 	json_value_t* pair_key = json_pair_getkey(json_val);
