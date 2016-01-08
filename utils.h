@@ -27,7 +27,10 @@
 #define UTILS_H_INCLUDED
 
 #include "types.h"
-
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 #define DEF_LIST_HEADER \
      struct list_s* prev;			\
      struct list_s* next
@@ -36,43 +39,44 @@
      struct list_type* prev;			\
      struct list_type* next
 
-typedef struct list_s
-{
-	DEF_LIST_HEADER;
-}list_t;
+	typedef struct list_s
+	{
+		DEF_LIST_HEADER;
+	}list_t;
 
 #define POOL_NAME_LEN 16
 
-typedef struct block_s
-{
-	DEF_LIST_HEADER;
-	int   mem_size;
-	int   debug_index;
-	char* cur_pos;
-}block_t;
+	typedef struct block_s
+	{
+		DEF_LIST_HEADER;
+		int   mem_size;
+		int   debug_index;
+		char* cur_pos;
+	}block_t;
 
-typedef struct pool_s
-{
-	char pool_name[POOL_NAME_LEN];
-	int init_size;
-	int increase_size;
-	int cur_size;
-	list_t blocks;
-	int block_count;
-}pool_t;
-
-
-void list_init(list_t* list_val);
-void list_link(list_t* list_before, list_t* list_after);
-int  list_get_size(list_t* list_val);
-void list_insert_before(list_t* list_pos, list_t* list_val);
-void list_insert_after(list_t* list_pos, list_t* list_val);
-
-pool_t* pool_create(const char* name, int init_size, int increase);
-int     pool_destory(pool_t* pool);
-void*   pool_malloc(pool_t* pool, int rq_size);
+	typedef struct pool_s
+	{
+		char pool_name[POOL_NAME_LEN];
+		int init_size;
+		int increase_size;
+		int cur_size;
+		list_t blocks;
+		block_t* current_block;
+		int block_count;
+	}pool_t;
 
 
+	void list_init(list_t* list_val);
+	void list_link(list_t* list_before, list_t* list_after);
+	int  list_get_size(list_t* list_val);
+	void list_insert_before(list_t* list_pos, list_t* list_val);
+	void list_insert_after(list_t* list_pos, list_t* list_val);
 
-
+	pool_t* pool_create(const char* name, int init_size, int increase);
+	int     pool_destory(pool_t* pool);
+	void*   pool_malloc(pool_t* pool, int rq_size);
+	void*   pool_malloc_fast(pool_t* pool, int rq_size);
+#ifdef __cplusplus
+}
+#endif
 #endif // UTILS_H_INCLUDED

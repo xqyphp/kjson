@@ -26,7 +26,8 @@
 #ifndef TYPE_H_INCLUDED
 #define TYPE_H_INCLUDED
 
-#define LOG(...) printf(__VA_ARGS__)
+#define LOG(...) 
+//#define LOG(...) printf(__VA_ARGS__)
 
 #ifndef NULL
 #define NULL ((void*)0)

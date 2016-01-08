@@ -33,7 +33,7 @@
 #include "json.h"
 #include "utils.h"
 
-
+#define BLOCK_SIZE 1024 * 16
 
 json_word_t* word_next(json_document_t* json_doc)
 {
@@ -41,7 +41,7 @@ json_word_t* word_next(json_document_t* json_doc)
 
 	char look_char = *(json_doc->cur_pos + 1);
 
-	while(isspace(look_char))
+	while (isspace(look_char))
 	{
 		++json_doc->cur_pos;
 		look_char = *(json_doc->cur_pos + 1);
@@ -75,32 +75,33 @@ json_word_t* word_next(json_document_t* json_doc)
 		json_doc->lookup.val_len = json_doc->cur_pos - json_doc->lookup.string_val;
 	}
 	else if (isdigit(look_char)
-		|| look_char =='-'
+		|| look_char == '-'
 		|| look_char == '+') {//TODO
 		json_doc->lookup.wtype = WORD_INT;
 		const char* pPos = json_doc->cur_pos + 1;
-		
+
 		json_doc->lookup.val_len = 0;
 		while (isdigit(json_doc->cur_pos[1])
-			|| json_doc->cur_pos[1] =='.'
+			|| json_doc->cur_pos[1] == '.'
 			|| json_doc->cur_pos[1] == '-'
 			|| json_doc->cur_pos[1] == '+')
 		{
-			if(json_doc->cur_pos[1] == '.')
+			if (json_doc->cur_pos[1] == '.')
 			{
 				json_doc->lookup.wtype = WORD_DOUBLE;
 			}
 			++json_doc->cur_pos;
 			++json_doc->lookup.val_len;
 		}
-		if(json_doc->lookup.wtype == WORD_INT)
+		if (json_doc->lookup.wtype == WORD_INT)
 		{
 			json_doc->lookup.int_val = atoi(pPos);
-		}else
+		}
+		else
 		{
 			json_doc->lookup.double_val = atof(pPos);
 		}
-		
+
 	}
 	else if (isalpha(look_char) || look_char == '_') {//TODO
 		json_doc->lookup.wtype = WORD_ID;
@@ -148,8 +149,8 @@ void word_print(json_word_t* pword)
 	return;
 }
 
-static int json_init_document(json_document_t* json_doc, const char* file_path,FILE* file,
-	const char* string_json,print_json_callback print_back)
+static int json_init_document(json_document_t* json_doc, const char* file_path, FILE* file,
+	const char* string_json, print_json_callback print_back)
 {
 	json_doc->file_path = file_path;
 	json_doc->file = file;
@@ -177,6 +178,7 @@ static int json_reset_document(json_document_t* json_doc)
 	json_doc->json_error.json_type = JSON_ERROR;
 	json_doc->memery_pool = NULL;
 	json_doc->print_callback = NULL;
+	json_doc->malloc_fast = K_TRUE;
 	return K_SUCCESS;
 }
 
@@ -186,7 +188,7 @@ int json_init_document_file(json_document_t* json_doc, const char* file_path, pr
 	FILE* file;
 	int   file_len;
 	file = fopen(file_path, "rb");
-	if(file == NULL)
+	if (file == NULL)
 	{
 		LOG("open file failed->%s\n", file_path);
 		json_reset_document(json_doc);
@@ -201,7 +203,7 @@ int json_init_document_file(json_document_t* json_doc, const char* file_path, pr
 	fread(string_json, file_len, sizeof(char), file);
 	string_json[file_len] = '\0';
 
-	return json_init_document(json_doc,file_path,file,string_json,print_back);
+	return json_init_document(json_doc, file_path, file, string_json, print_back);
 }
 
 int json_init_document_string(json_document_t* json_doc, const char* string_json, print_json_callback print_back)
@@ -220,14 +222,14 @@ int json_destory_document(json_document_t* json_doc)
 	{
 		pool_destory(json_doc->memery_pool);
 	}
-	
+
 	json_reset_document(json_doc);
 	return K_SUCCESS;
 }
 
 json_value_t* json_new_value(json_type_t json_type, pool_t* pool)
 {
-	json_value_t* json_val = (json_value_t*)pool_malloc(pool, sizeof(json_value_t));
+	json_value_t* json_val = (json_value_t*)pool_malloc_fast(pool, sizeof(json_value_t));
 	list_init((list_t*)json_val);
 	json_val->json_type = json_type;
 	if (json_type == JSON_OBJECT
@@ -259,9 +261,9 @@ json_value_t* json_set_id_word(json_value_t* json_val, json_word_t* json_word, p
 	assert(json_val->json_type == JSON_ID);
 	assert(json_word->wtype == WORD_ID
 		|| json_word->wtype == WORD_STRING);
-	if(json_word->wtype == WORD_STRING)
+	if (json_word->wtype == WORD_STRING)
 	{
-		return json_set_string_word(json_val,json_word,pool);
+		return json_set_string_word(json_val, json_word, pool);
 	}
 
 	if (strncmp("true", json_word->string_val, json_word->val_len) == 0)
@@ -381,7 +383,7 @@ json_value_t* json_parse_id(json_document_t* json_doc, pool_t* pool)
 	json_value_t* json_val = json_new_value(JSON_ID, pool);
 	json_word_t* word = word_next(json_doc);
 	assert(json_val->json_type == JSON_STRING || json_val->json_type == JSON_ID);
-	if(json_val->json_type == JSON_ID)
+	if (json_val->json_type == JSON_ID)
 	{
 		json_set_id_word(json_val, word, pool);
 	}
@@ -442,7 +444,7 @@ json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool)
 
 json_value_t* json_parse_root(json_document_t* json_doc)
 {
-	pool_t* pool = pool_create("json_pool", 1024, 1024);
+	pool_t* pool = pool_create("json_pool", BLOCK_SIZE, BLOCK_SIZE);
 	json_doc->memery_pool = pool;
 	return json_parse_root_pool(json_doc, pool);
 }
@@ -632,7 +634,7 @@ bool_t        json_print_int(json_value_t* json_val, print_json_callback print_b
 {
 	assert(json_val->json_type == JSON_INT);
 	char str[16];
-	sprintf(str, "%d", json_val->int_val); 
+	sprintf(str, "%d", json_val->int_val);
 	print_back(str);
 	return K_TRUE;
 }
@@ -664,7 +666,7 @@ bool_t        json_print_array(json_value_t* json_val, print_json_callback print
 	{
 		json_print_node(json_child, print_back);
 		json_child = json_child_next(json_val, json_child);
-		if(json_child != NULL)
+		if (json_child != NULL)
 		{
 			print_back(",");
 		}

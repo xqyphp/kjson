@@ -47,7 +47,7 @@ int  list_get_size(list_t* list_val)
 {
 	int count = 1;
 	list_t* list_next = list_val;
-	while(list_next->next != list_val)
+	while (list_next->next != list_val)
 	{
 		++count;
 		list_next = list_next->next;
@@ -81,6 +81,7 @@ void pool_add_block(pool_t* pool, block_t* block, int block_size)
 	list_insert_after((list_t*)&(pool->blocks), (list_t*)block);
 }
 
+
 block_t* pool_find_block(pool_t* pool, int rq_size)
 {
 	block_t* block = (block_t*)pool->blocks.next;
@@ -88,7 +89,7 @@ block_t* pool_find_block(pool_t* pool, int rq_size)
 		block_t* block_next = (block_t*)block->next;
 		int mem_free = pool_block_get_free(block);
 		if (mem_free >= rq_size) {
-			LOG("pool_find_block->index = %d , size = %d,free=%d\n", block->debug_index, block->mem_size,mem_free);
+			LOG("pool_find_block->index = %d , size = %d,free=%d\n", block->debug_index, block->mem_size, mem_free);
 			return block;
 		}
 		block = block_next;
@@ -99,19 +100,19 @@ block_t* pool_find_block(pool_t* pool, int rq_size)
 
 block_t* pool_new_block(pool_t* pool, int block_size)
 {
-	
+
 	block_t* block = (block_t*)malloc(sizeof(block_t) + block_size);
 	block->debug_index = pool->block_count++;
 	pool_add_block(pool, block, block_size);
 
 	LOG("pool_new_block->index = %d , size = %d.\n", block->debug_index, block->mem_size);
-	
+
 	return block;
 }
 
 pool_t* pool_create(const char* name, int init_size, int increase)
 {
-	LOG("pool_create -> %s,size=%d,increase=%d.\n", name,init_size, increase);
+	LOG("pool_create -> %s,size=%d,increase=%d.\n", name, init_size, increase);
 	pool_t* pool = (pool_t*)malloc(sizeof(pool_t));
 	assert(strlen(name) < POOL_NAME_LEN);
 	strcpy(pool->pool_name, name);
@@ -120,7 +121,7 @@ pool_t* pool_create(const char* name, int init_size, int increase)
 	pool->increase_size = increase;
 	pool->block_count = 0;
 	list_init(&(pool->blocks));
-	pool_new_block(pool,init_size);
+	pool_new_block(pool, init_size);
 	return pool;
 }
 
@@ -132,6 +133,23 @@ void*   pool_malloc(pool_t*pool, int rq_size)
 		block = pool_new_block(pool, pool->increase_size > rq_size ? pool->increase_size : rq_size);
 		assert(block != NULL);
 	}
+	pool->current_block = block;
+	void* ptr_mem = block->cur_pos;
+	block->cur_pos += rq_size;
+	LOG("pool_malloc return -> index =%d.\n", block->debug_index);
+	return ptr_mem;
+}
+
+void*   pool_malloc_fast(pool_t* pool, int rq_size)
+{
+	LOG("pool_malloc_fast -> rq_size=%d.\n", rq_size);
+
+	block_t* block = pool->current_block;
+	if (block == NULL || pool_block_get_free(block) < rq_size) {
+		block = pool_new_block(pool, pool->increase_size > rq_size ? pool->increase_size : rq_size);
+		assert(block != NULL);
+	}
+	pool->current_block = block;
 	void* ptr_mem = block->cur_pos;
 	block->cur_pos += rq_size;
 	LOG("pool_malloc return -> index =%d.\n", block->debug_index);

@@ -30,7 +30,10 @@
 
 #include "types.h"
 #include "utils.h"
-
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 typedef enum json_type_e
 {
 	JSON_ARRAY,
@@ -102,6 +105,7 @@ typedef struct json_document_s
 	json_word_t lookup;
 	json_value_t json_error;
 	pool_t*      memery_pool;
+	bool_t       malloc_fast;
 	print_json_callback   print_callback;
 }json_document_t;
 
@@ -161,5 +165,7 @@ json_value_t* json_parse_string(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_int(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_double(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool);
-
+#ifdef __cplusplus
+}
+#endif
 #endif // JSON_H_INCLUDED
