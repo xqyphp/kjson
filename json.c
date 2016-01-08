@@ -95,11 +95,12 @@ json_word_t* word_next(json_document_t* json_doc)
 		}
 		
 	}
-	else if (isalpha(look_char)) {//TODO
+	else if (isalpha(look_char) || look_char == '_') {//TODO
 		json_doc->lookup.wtype = WORD_KEY;
 		json_doc->lookup.string_val = json_doc->cur_pos + 1;
 		json_doc->lookup.val_len = 0;
-		while (isalpha(json_doc->cur_pos[1]))
+		while (isalnum(json_doc->cur_pos[1])
+			|| json_doc->cur_pos[1] == '_')
 		{
 			++json_doc->cur_pos;
 			++json_doc->lookup.val_len;
