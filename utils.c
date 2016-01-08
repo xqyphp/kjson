@@ -120,6 +120,7 @@ pool_t* pool_create(const char* name, int init_size, int increase)
 	pool->cur_size = init_size;
 	pool->increase_size = increase;
 	pool->block_count = 0;
+	pool->current_block = NULL;
 	list_init(&(pool->blocks));
 	pool_new_block(pool, init_size);
 	return pool;
