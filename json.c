@@ -143,20 +143,36 @@ static int json_init_document(json_document_t* json_doc, const char* file_path,F
 	return K_SUCCESS;
 }
 
+static int json_reset_document(json_document_t* json_doc)
+{
+	json_doc->file_path = NULL;
+	json_doc->file = NULL;
+	json_doc->json = NULL;
+	json_doc->cur_pos = NULL;
+	json_doc->json_len = 0;
+	json_doc->cur_word.wtype = -1;
+	json_doc->lookup.wtype = -1;
+	json_doc->json_error.json_type = JSON_ERROR;
+	json_doc->memery_pool = NULL;
+	json_doc->print_callback = NULL;
+	return K_SUCCESS;
+}
+
 int json_init_document_file(json_document_t* json_doc, const char* file_path, print_json_callback print_back)
 {
 	char* string_json;
 	FILE* file;
 	int   file_len;
-	file = fopen(file_path, "r");
+	file = fopen(file_path, "rb");
 	if(file == NULL)
 	{
 		LOG("open file failed->%s\n", file_path);
+		json_reset_document(json_doc);
 		return K_ERROR;
 	}
 
 	fseek(file, 0, SEEK_END);
-	file_len = ftell(json_doc->file);
+	file_len = ftell(file);
 	LOG("json file len->%d\n", file_len);
 	fseek(file, 0, SEEK_SET);
 	string_json = (char *)malloc(file_len * sizeof(char) + 1);
@@ -173,24 +189,17 @@ int json_init_document_string(json_document_t* json_doc, const char* string_json
 
 int json_destory_document(json_document_t* json_doc)
 {
-	if (json_doc->memery_pool != NULL)
-	{
-		pool_destory(json_doc->memery_pool);
-	}
 	if (json_doc->file != NULL)
 	{
 		fclose(json_doc->file);
 	}
-	json_doc->file_path = NULL;
-	json_doc->file = NULL;
-	json_doc->json = NULL;
-	json_doc->cur_pos =  NULL;
-	json_doc->json_len = 0;
-	json_doc->cur_word.wtype = -1;
-	json_doc->lookup.wtype = -1;
-	json_doc->json_error.json_type = JSON_ERROR;
-	json_doc->memery_pool = NULL;
-	json_doc->print_callback = NULL;
+
+	if (json_doc->memery_pool != NULL)
+	{
+		pool_destory(json_doc->memery_pool);
+	}
+	
+	json_reset_document(json_doc);
 	return K_SUCCESS;
 }
 
