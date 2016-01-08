@@ -66,11 +66,11 @@ json_word_t* word_next(json_document_t* json_doc)
 		json_doc->lookup.string_val = json_doc->cur_pos;
 		while (*(json_doc->cur_pos) != look_char)
 		{
-			++json_doc->cur_pos;
 			if (*(json_doc->cur_pos) == '\\')
 			{
 				++json_doc->cur_pos;
 			}
+			++json_doc->cur_pos;
 		}
 		json_doc->lookup.val_len = json_doc->cur_pos - json_doc->lookup.string_val;
 	}
