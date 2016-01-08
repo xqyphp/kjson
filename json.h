@@ -26,6 +26,8 @@
 #ifndef JSON_H_INCLUDED
 #define JSON_H_INCLUDED
 
+#include <stdio.h>
+
 #include "types.h"
 #include "utils.h"
 
@@ -86,6 +88,7 @@ typedef struct json_document_s
 {
 	const char* file_path;
 	const char* json;
+	FILE*       file;
 	int         json_len;
 	const char* cur_pos;
 	json_word_t cur_word;
