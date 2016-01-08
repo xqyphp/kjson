@@ -74,13 +74,17 @@ json_word_t* word_next(json_document_t* json_doc)
 		}
 		json_doc->lookup.val_len = json_doc->cur_pos - json_doc->lookup.string_val;
 	}
-	else if (isdigit(look_char)) {//TODO
+	else if (isdigit(look_char)
+		|| look_char =='-'
+		|| look_char == '+') {//TODO
 		json_doc->lookup.wtype = WORD_INT;
 		const char* pPos = json_doc->cur_pos + 1;
 		
 		json_doc->lookup.val_len = 0;
 		while (isdigit(json_doc->cur_pos[1])
-			|| json_doc->cur_pos[1] =='.')
+			|| json_doc->cur_pos[1] =='.'
+			|| json_doc->cur_pos[1] == '-'
+			|| json_doc->cur_pos[1] == '+')
 		{
 			if(json_doc->cur_pos[1] == '.')
 			{
