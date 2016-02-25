@@ -216,6 +216,7 @@ int json_destory_document(json_document_t* json_doc)
 	if (json_doc->file != NULL)
 	{
 		fclose(json_doc->file);
+		free(json_doc->json);
 	}
 
 	if (json_doc->memery_pool != NULL)
