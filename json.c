@@ -786,6 +786,7 @@ json_value_t* json_create_string(json_document_t* json_doc, const char* str_val)
 {
 	json_value_t* json_val = json_create_id(json_doc, str_val);
 	json_val->json_type = JSON_STRING;
+	return json_val;
 }
 
 json_value_t* json_create_int(json_document_t* json_doc, int int_val)
