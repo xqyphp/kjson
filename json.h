@@ -106,14 +106,19 @@ typedef struct json_document_s
 	json_value_t json_error;
 	pool_t*      memery_pool;
 	bool_t       malloc_fast;
+	bool_t       quote_key;
+	bool_t       double_quote;
 	print_json_callback   print_callback;
 }json_document_t;
 
 
 
+int json_init_document_empty(json_document_t* json_doc,print_json_callback print_back);
 int json_init_document_file(json_document_t* json_doc, const char* file_path, print_json_callback print_back);
 int json_init_document_string(json_document_t* json_doc, const char* string_json, print_json_callback print_back);
 int json_destory_document(json_document_t* json_doc);
+void json_set_dobule_quote(json_document_t* json_doc,bool_t bdquote);
+void json_set_quote_key(json_document_t* json_doc, bool_t bquote_key);
 
 json_value_t* json_parse_root(json_document_t* json_doc);
 json_value_t* json_parse_root_pool(json_document_t* json_doc, pool_t* pool);
@@ -135,16 +140,16 @@ json_value_t* json_object_get(json_value_t* json_val, const char* key);
 json_value_t* json_child_first(json_value_t* json_val);
 json_value_t* json_child_next(json_value_t* json_val, json_value_t* json_child);
 
-bool_t        json_print_node(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_int(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_double(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_key(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_bool(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_null(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_string(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_array(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_object(json_value_t* json_val, print_json_callback print_back);
-bool_t        json_print_pair(json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_node(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_int(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_double(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_key(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_bool(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_null(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_string(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_array(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_object(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
+bool_t        json_print_pair(json_document_t* json_doc,json_value_t* json_val, print_json_callback print_back);
 
 json_word_t*  word_next(json_document_t* json_doc);
 json_word_t*  word_lookup(json_document_t* json_doc);
@@ -165,6 +170,17 @@ json_value_t* json_parse_string(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_int(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_double(json_document_t* json_doc, pool_t* pool);
 json_value_t* json_parse_value(json_document_t* json_doc, pool_t* pool);
+
+json_value_t* json_create_value(json_document_t* json_doc, json_type_t json_type);
+json_value_t* json_create_object(json_document_t* json_doc);
+json_value_t* json_create_array(json_document_t* json_doc);
+json_value_t* json_create_id(json_document_t* json_doc,const char* str_val);
+json_value_t* json_create_string(json_document_t* json_doc, const char* str_val);
+json_value_t* json_create_int(json_document_t* json_doc, int int_val);
+json_value_t* json_create_double(json_document_t* json_doc, double double_val);
+
+bool_t        json_add_val2obj(json_document_t* json_doc, json_value_t* obj, json_value_t* key, json_value_t* val);
+bool_t        json_add_val2arr(json_value_t* arr, json_value_t* val);
 #ifdef __cplusplus
 }
 #endif
